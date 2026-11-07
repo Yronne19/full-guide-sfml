@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Block Builder: CMake, SFML and MySQL for a 2D game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f1e7;--fg:#241f19;--mut:#6b6254;--card:#fffaf0;--line:#d9cfba;--sky:#5ab9ff;--grass:#3f9a2f;--dirt:#86603c;--code:#1e1b17;--codefg:#eee6d6;--cm:#8fbf7a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16130f;--fg:#efe7d6;--mut:#a89d88;--card:#1f1b16;--line:#383026;--code:#0e0c0a}}
+:root[data-theme="dark"]{--bg:#16130f;--fg:#efe7d6;--mut:#a89d88;--card:#1f1b16;--line:#383026;--code:#0e0c0a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.65 Nunito,system-ui,sans-serif}
+header{background:var(--sky);border-bottom:8px solid var(--grass);box-shadow:0 8px 0 var(--dirt);padding:28px 18px 18px;color:#10253a}
+.wrap{max-width:900px;margin:0 auto}
+h1{font:22px/1.5 "Press Start 2P",monospace;margin:0 0 10px}
+header p{margin:0 0 14px;max-width:60ch}
+canvas{width:100%;height:auto;image-rendering:pixelated;display:block;border:3px solid #10253a;background:#8fd2ff;cursor:crosshair}
+nav{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:2px solid var(--line);margin-top:16px;padding-top:env(safe-area-inset-top,0px)}
+nav .wrap{display:flex;gap:6px;padding:8px 14px;overflow-x:auto}
+nav button{font:11px "Press Start 2P",monospace;background:var(--card);color:var(--fg);border:2px solid var(--line);padding:10px 12px;cursor:pointer;white-space:nowrap}
+nav button[aria-selected="true"]{background:var(--grass);color:#fff;border-color:var(--grass)}
+nav button:focus-visible,.copy:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+main{padding:10px 18px 60px}
+section.tab{display:none}section.tab.on{display:block}
+h2{font:14px/1.6 "Press Start 2P",monospace;margin:42px 0 12px}
+h3{margin:26px 0 6px;font-size:18px}
+p,li{max-width:70ch}
+.note{border-left:6px solid var(--grass);background:var(--card);padding:10px 14px;margin:14px 0}
+.fig{position:relative;margin:12px 0}
+.fig .name{font:700 13px Nunito,sans-serif;color:var(--mut);margin:0 0 3px}
+pre{margin:0;background:var(--code);color:var(--codefg);padding:14px;overflow-x:auto;font:14px/1.5 ui-monospace,Consolas,monospace;border-radius:4px}
+.cm{color:var(--cm)}
+.copy{position:absolute;right:6px;top:22px;font:700 12px Nunito,sans-serif;background:#3a342b;color:#fff;border:0;padding:5px 9px;cursor:pointer}
+code.i{background:var(--card);border:1px solid var(--line);padding:1px 5px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>Block Builder</h1>
+<p>Build a Growtopia-style 2D game in C++: CMake in VS Code, SFML for graphics, MySQL for saving players. Click the blocks below to break them.</p>
+<canvas id="hero" width="640" height="160" aria-label="Animated demo of a walking player on 32 by 32 blocks"></canvas>
+</div></header>
+<nav><div class="wrap" role="tablist">
+<button role="tab" data-t="cmake">1. CMake</button>
+<button role="tab" data-t="sfml">2. SFML</button>
+<button role="tab" data-t="modules">3. Modules</button>
+<button role="tab" data-t="mysql">4. MySQL</button>
+<button role="tab" data-t="tips">5. Tips</button>
+</div></nav>
+<main><div class="wrap">
+
+<section class="tab" id="cmake">
+<h2>CMake in VS Code</h2>
+<p>CMake does not compile your code. It reads <code class="i">CMakeLists.txt</code> and generates the build files for your compiler (MSVC, MinGW, GCC, Clang). VS Code’s CMake Tools extension runs it for you.</p>
+<h3>Setup</h3>
+<ol>
+<li>Install a compiler: on Windows, “Build Tools for Visual Studio” (MSVC) or MSYS2 MinGW. On Linux, <code class="i">sudo apt install build-essential cmake</code>.</li>
+<li>Install CMake from cmake.org and tick “Add to PATH”. Check with <code class="i">cmake --version</code>.</li>
+<li>In VS Code install the extensions <b>C/C++</b> and <b>CMake Tools</b> (both from Microsoft).</li>
+<li>Press <b>Ctrl+Shift+P</b>, run <b>CMake: Select a Kit</b> and pick your compiler.</li>
+<li>Build with the <b>Build</b> button in the bottom bar (or F7), run with the play button.</li>
+</ol>
+<div class="note">Using MSVC? Open VS Code from the “Developer Command Prompt”, or just pick the Visual Studio kit. Using MinGW? Add its <code class="i">bin</code> folder to PATH.</div>
+
+<h2>Example 1: a C project</h2>
+<div id="c1"></div>
+<h2>Example 2: a C++ project</h2>
+<div id="c2"></div>
+<h2>Example 3: C and C++ together</h2>
+<p>List both languages, then put the C code in its own library. The <code class="i">extern "C"</code> block lets C++ call C functions.</p>
+<div id="c3"></div>
+<h2>Core CMake commands</h2>
+<p>The commands you will use in almost every project. In VS Code, switch between Debug (for the debugger) and Release (fast, for playing) with the build variant button in the bottom bar.</p>
+<div id="c6"></div>
+<h2>Adding other libraries</h2>
+<p>Three common ways. <b>FetchContent</b> downloads and builds the library for you, so it is the easiest for beginners.</p>
+<div id="c4"></div>
+<p><b>vcpkg</b> is a package manager: <code class="i">vcpkg install sdl2</code>, then tell CMake Tools where it lives:</p>
+<div id="c5"></div>
+<p><b>PRIVATE vs PUBLIC:</b> use PRIVATE when only your target needs the library. Use PUBLIC when anything linking to your library needs it too.</p>
+</section>
+
+<section class="tab" id="sfml">
+<h2>SFML project</h2>
+<p>This game needs no image files. <code class="i">assets.cpp</code> draws the 32x32 Growtopia-style blocks and a 4-frame walking spritesheet with code, so the project builds and runs as soon as you press F5. Later, swap them for your own PNGs with <code class="i">sf::Texture("file.png")</code>.</p>
+<pre style="margin-bottom:6px">GrowGame/
+  CMakeLists.txt
+  src/  main.cpp  assets.hpp  assets.cpp</pre>
+<div id="s1"></div>
+<h2>How to use each part</h2>
+<div id="h1"></div><div id="h2"></div><div id="h3"></div><div id="h4"></div><div id="h5"></div><div id="h6"></div>
+<h2>Full source: assets</h2>
+<p>The tileset is one row of blocks: dirt, grass, rock, wood. The player sheet is 4 frames in a row. Frame 0 is standing, 1 to 3 are walking.</p>
+<div id="s2"></div><div id="s3"></div>
+<h2>Full source: the game</h2>
+<p>Move with A and D, jump with W. Left click breaks a block (like a punch). Right click places a wood block.</p>
+<div id="s4"></div>
+<div class="note">The code uses SFML 3 style (<code class="i">sf::Vector2</code> braces, <code class="i">pollEvent</code> returning an optional). If you pick SFML 2 from a package manager, many calls differ, so stick with the FetchContent version above.</div>
+</section>
+
+<section class="tab" id="modules">
+<h2>The five SFML modules</h2>
+<p>SFML is split into modules, and each one is its own CMake target. Including <code class="i">&lt;SFML/Graphics.hpp&gt;</code> also brings in Window and System.</p>
+<ul>
+<li><b>System:</b> time, clocks, vectors, angles.</li>
+<li><b>Window:</b> the window, events, keyboard and mouse.</li>
+<li><b>Graphics:</b> textures, sprites, shapes, text, cameras.</li>
+<li><b>Audio:</b> sound effects and music.</li>
+<li><b>Network:</b> TCP and UDP sockets, packets.</li>
+</ul>
+<div id="k0"></div>
+<h2>System</h2>
+<div id="k1"></div>
+<h2>Window</h2>
+<div id="k2"></div>
+<h2>Graphics</h2>
+<p>Shapes and text are the quickest way to draw a prototype or a UI. For a big tile world, build one VertexArray: it draws the whole map in a single call.</p>
+<div id="k3"></div>
+<div id="k4"></div>
+<h2>Audio</h2>
+<div id="k5"></div>
+<h2>Network</h2>
+<div id="k6"></div>
+<div class="note">In an online game the client must never connect to MySQL directly: the database password would sit inside the .exe. Use client, then your server, then MySQL.</div>
+<h2>Making a UI</h2>
+<p>SFML has no ready-made buttons or text fields, so you build small classes from shapes and text. Draw the UI after calling <code class="i">window.setView(window.getDefaultView())</code> so it does not move with the camera. You need any .ttf font file, for example C:/Windows/Fonts/arial.ttf copied into your assets folder.</p>
+<div id="u1"></div>
+<div id="u2"></div>
+</section>
+
+<section class="tab" id="mysql">
+<h2>MySQL + C++</h2>
+<p>Plan: install MySQL Server, install <b>MySQL Connector/C++</b> (the “JDBC-style” API), create a database, then add a small <code class="i">Database</code> class to your game.</p>
+<ol>
+<li>Install MySQL Server and MySQL Workbench. Remember your root password.</li>
+<li>Download Connector/C++ from dev.mysql.com (pick the build that matches your compiler; MSVC on Windows). Install it, e.g. to <code class="i">C:/Program Files/MySQL/MySQL Connector C++ 9.x</code>.</li>
+<li>Run the SQL below in Workbench.</li>
+</ol>
+<div id="m1"></div>
+<h2>CMake</h2>
+<p>Add this to the game’s CMakeLists. Match the folder name to your installed version. If CMake cannot find it, set <code class="i">mysql-concpp_DIR</code> to the folder holding <code class="i">mysql-concpp-config.cmake</code>.</p>
+<div id="m2"></div>
+<h2>Database class</h2>
+<div id="m3"></div><div id="m4"></div>
+<h2>Use it in main</h2>
+<div id="m5"></div>
+<div class="note"><b>Safety rules.</b> Always use <code class="i">?</code> placeholders, never paste user text into SQL (that is how SQL injection happens). Never store plain passwords: hash them with a library such as libsodium (argon2) or bcrypt. Do not hard-code the DB password in code you upload to GitHub; read it from an environment variable or config file.</div>
+</section>
+
+<section class="tab" id="tips">
+<h2>Tips and tricks for game logic</h2>
+<p>These habits keep an SFML game smooth and keep MySQL from freezing it. Each one has a small example you can paste in.</p>
+<h3>1. Keep update and draw separate</h3>
+<p>Change the game state first (move, collide, punch), then draw it. A fixed timestep makes physics behave the same on slow and fast PCs.</p>
+<div id="t1"></div>
+<h3>2. Never call MySQL inside the game loop</h3>
+<p>A query can take 5 to 500 ms, and the game freezes for that long. Load once at start, then save from a background thread. One MySQL connection must only be used by one thread, so create it inside the worker.</p>
+<div id="t2"></div>
+<h3>3. Save only what changed</h3>
+<p>The <code class="i">world</code> array is the truth while playing. Remember which tiles changed (a “dirty” list) and write only those, in one transaction. Saving 450 tiles every frame would be far too slow.</p>
+<div id="t3"></div>
+<h3>4. Put block rules in a table, not in if-chains</h3>
+<div id="t4"></div>
+<h3>5. Convert mouse pixels to world coordinates</h3>
+<p>Once you use a camera (<code class="i">sf::View</code>), the mouse position in the window is not the position in the world.</p>
+<div id="t5"></div>
+<h3>6. Use a state machine for screens</h3>
+<div id="t6"></div>
+<h3>7. Collisions and removing items</h3>
+<div id="t7"></div>
+<h3>8. Login without freezing the game</h3>
+<p>The UI thread starts the check, the worker does the MySQL query, and a flag tells the game loop when the answer is ready.</p>
+<div id="t8"></div>
+<h3>9. Buying items: use a transaction</h3>
+<p>Taking gems from the player and giving the item must happen together or not at all. The <code class="i">gems &gt;= 50</code> check inside the UPDATE stops a player from going below zero, even if two requests arrive at once.</p>
+<div id="t9"></div>
+<h3>10. Debug drawing</h3>
+<div id="t10"></div>
+<h3>Quick rules</h3>
+<ul>
+<li>Save on events (leaving the world, buying something), plus a timer every 30 seconds. Not every frame.</li>
+<li>Load everything you need before the loop starts, and show a loading text while you do.</li>
+<li>Use game states (<code class="i">enum class State { Login, Playing }</code>) so the login screen and the world do not mix their code.</li>
+<li>Draw only what is on screen: loop over the tiles inside the camera, not the whole map.</li>
+<li>Check for errors on every DB call and keep playing offline if the database is down.</li>
+<li>Test small: make one feature work (punch a block), save it, reload it, then add the next.</li>
+</ul>
+</section>
+
+</div></main>
+<script>
+var C={};
+C.c1=["CMakeLists.txt","cmake",`cmake_minimum_required(VERSION 3.20)
+project(HelloC LANGUAGES C)          # only the C compiler is needed
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+add_executable(hello src/main.c)     # target name, then its source files`,
+"src/main.c","cpp",`#include <stdio.h>
+
+int main(void) {
+    printf("Hello from C!\\n");
+    return 0;
+}`];
+C.c2=["CMakeLists.txt","cmake",`cmake_minimum_required(VERSION 3.20)
+project(HelloCpp LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_executable(hello src/main.cpp)`,
+"src/main.cpp","cpp",`#include <iostream>
+
+int main() {
+    std::cout << "Hello from C++!\\n";
+    return 0;
+}`];
+C.c3=["CMakeLists.txt","cmake",`cmake_minimum_required(VERSION 3.20)
+project(Mixed LANGUAGES C CXX)       # both compilers
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+
+add_library(mathc STATIC lib/mathc.c)            # C code becomes a library
+target_include_directories(mathc PUBLIC lib)     # anyone linking mathc sees lib/mathc.h
+
+add_executable(app src/main.cpp)
+target_link_libraries(app PRIVATE mathc)`,
+"lib/mathc.h","cpp",`#pragma once
+#ifdef __cplusplus
+extern "C" {            // tell C++ these functions use C naming
+#endif
+int add(int a, int b);
+#ifdef __cplusplus
+}
+#endif`,
+"lib/mathc.c","cpp",`#include "mathc.h"
+int add(int a, int b) { return a + b; }`,
+"src/main.cpp","cpp",`#include <iostream>
+#include "mathc.h"
+
+int main() { std::cout << add(2, 3) << "\\n"; }`];
+C.c4=["CMakeLists.txt","cmake",`include(FetchContent)
+
+FetchContent_Declare(fmt
+    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+    GIT_TAG        11.0.2)               # always pin a version
+FetchContent_MakeAvailable(fmt)          # downloads + builds it at configure time
+
+add_executable(app src/main.cpp)
+target_link_libraries(app PRIVATE fmt::fmt)   # include paths come with the target`];
+C.c5=[".vscode/settings.json","json",`{
+  "cmake.configureArgs": [
+    "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+  ]
+}`,"CMakeLists.txt","cmake",`find_package(SDL2 CONFIG REQUIRED)
+target_link_libraries(app PRIVATE SDL2::SDL2)`];
+C.s1=["CMakeLists.txt","cmake",`cmake_minimum_required(VERSION 3.28)
+project(GrowGame LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(BUILD_SHARED_LIBS OFF)           # static: no SFML .dll files to copy
+
+include(FetchContent)
+FetchContent_Declare(SFML
+    GIT_REPOSITORY https://github.com/SFML/SFML.git
+    GIT_TAG 3.0.2                    # use a newer SFML 3 tag if you want
+    GIT_SHALLOW ON
+    SYSTEM)
+set(SFML_BUILD_AUDIO OFF)            # skip modules we do not use
+set(SFML_BUILD_NETWORK OFF)
+FetchContent_MakeAvailable(SFML)
+
+add_executable(game src/main.cpp src/assets.cpp)
+target_link_libraries(game PRIVATE SFML::Graphics)`];
+C.h1=["Window and events","cpp",`sf::RenderWindow window(sf::VideoMode({800, 600}), "My Game");
+window.setFramerateLimit(60);
+
+while (window.isOpen()) {
+    while (const std::optional event = window.pollEvent()) {   // read all events
+        if (event->is<sf::Event::Closed>()) window.close();
+        if (const auto* key = event->getIf<sf::Event::KeyPressed>())
+            if (key->code == sf::Keyboard::Key::Escape) window.close();
+    }
+    window.clear(sf::Color(110, 190, 255));   // 1. wipe the frame
+    // window.draw(...) goes here             // 2. draw things
+    window.display();                         // 3. show it
+}`];
+C.h2=["Texture and Sprite (a block)","cpp",`sf::Texture tiles = makeTileset();      // the image data lives in the Texture
+sf::Sprite block(tiles);                // a Sprite only points to a Texture, so keep it alive
+block.setTextureRect(sf::IntRect({32, 0}, {32, 32}));   // cut tile #1 (grass) out of the row
+block.setPosition({100.f, 200.f});
+window.draw(block);`];
+C.h3=["Spritesheet animation","cpp",`// Frames sit side by side: frame n starts at x = n * 32.
+float timer = 0; int frame = 0;
+timer += dt;                                   // dt = seconds since last frame
+if (moving) frame = int(timer * 8) % 4;        // 8 frames per second, loop 0..3
+else        frame = 0;                         // standing
+player.setTextureRect(sf::IntRect({frame * 32, 0}, {32, 32}));`];
+C.h4=["Clock and delta time","cpp",`sf::Clock clock;
+// inside the game loop:
+float dt = clock.restart().asSeconds();   // time since the last restart
+pos.x += speed * dt;                      // speed in pixels per second = same on any PC`];
+C.h5=["Keyboard and mouse","cpp",`if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) dir += 1;     // held down
+
+if (const auto* m = event->getIf<sf::Event::MouseButtonPressed>()) {   // one click
+    int tx = m->position.x / 32, ty = m->position.y / 32;             // pixel -> tile
+    bool left = (m->button == sf::Mouse::Button::Left);
+}`];
+C.h6=["View (camera) and Text","cpp",`sf::View camera(sf::FloatRect({0, 0}, {800, 600}));
+camera.setCenter(player.getPosition());   // follow the player
+window.setView(camera);
+
+sf::Font font("arial.ttf");               // SFML 3 loads in the constructor (throws on failure)
+sf::Text label(font, "Gems: 10", 24);
+label.setPosition({10, 10});
+window.draw(label);`];
+C.s2=["src/assets.hpp","cpp",`#pragma once
+#include <SFML/Graphics.hpp>
+
+sf::Texture makeTileset();      // 4 blocks in a row, 32x32 each: dirt, grass, rock, wood
+sf::Texture makePlayerSheet();  // 4 walking frames in a row, 32x32 each`];
+C.s3=["src/assets.cpp","cpp",`#include "assets.hpp"
+#include <algorithm>
+
+// Cheap repeatable noise: same x,y always gives the same number.
+static unsigned noise(unsigned x, unsigned y) {
+    unsigned h = x * 374761393u + y * 668265263u;
+    h = (h ^ (h >> 13)) * 1274126177u;
+    return h ^ (h >> 16);
+}
+
+// Fill a w*h rectangle with one colour.
+static void rect(sf::Image& img, unsigned x, unsigned y, unsigned w, unsigned h, sf::Color c) {
+    for (unsigned j = y; j < y + h; ++j)
+        for (unsigned i = x; i < x + w; ++i) img.setPixel({i, j}, c);
+}
+
+// A 32x32 block: base colour + random speckle + a dark outline, like Growtopia tiles.
+static void block(sf::Image& img, unsigned ox, sf::Color base, int grain) {
+    for (unsigned y = 0; y < 32; ++y)
+        for (unsigned x = 0; x < 32; ++x) {
+            int d = int(noise(x + ox, y) % (2 * grain + 1)) - grain;
+            auto c = [&](int v) { return (std::uint8_t)std::clamp(v + d, 0, 255); };
+            bool edge = (x == 0 || y == 0 || x == 31 || y == 31);
+            sf::Color col(c(base.r), c(base.g), c(base.b));
+            if (edge) col = sf::Color(base.r / 2, base.g / 2, base.b / 2);
+            img.setPixel({ox + x, y}, col);
+        }
+}
+
+sf::Texture makeTileset() {
+    sf::Image img(sf::Vector2u{32 * 4, 32}, sf::Color::Transparent);
+    block(img, 0,  {134, 96, 60}, 14);                 // dirt
+    block(img, 32, {134, 96, 60}, 14);                 // grass = dirt + green top
+    rect(img, 33, 1, 30, 7, {80, 170, 60});
+    block(img, 64, {120, 120, 130}, 10);               // rock
+    block(img, 96, {170, 120, 70}, 6);                 // wood planks
+    rect(img, 97, 10, 30, 2, {110, 70, 40});
+    rect(img, 97, 21, 30, 2, {110, 70, 40});
+    return sf::Texture(img);
+}
+
+sf::Texture makePlayerSheet() {
+    sf::Image img(sf::Vector2u{32 * 4, 32}, sf::Color::Transparent);
+    for (unsigned f = 0; f < 4; ++f) {
+        unsigned ox = f * 32;
+        rect(img, ox + 10, 2, 12, 10, {255, 214, 170});   // head
+        rect(img, ox + 9, 0, 14, 4, {60, 40, 30});        // hair
+        rect(img, ox + 17, 6, 2, 2, {20, 20, 20});        // eye
+        rect(img, ox + 9, 12, 14, 10, {220, 60, 60});     // shirt
+        int swing = (f == 1) ? -3 : (f == 3) ? 3 : 0;     // legs move apart
+        rect(img, ox + 10 + swing, 22, 5, f == 1 ? 7 : 10, {50, 80, 200});
+        rect(img, ox + 17 - swing, 22, 5, f == 3 ? 7 : 10, {50, 80, 200});
+    }
+    return sf::Texture(img);
+}`];
+C.s4=["src/main.cpp","cpp",`#include <SFML/Graphics.hpp>
+#include <array>
+#include "assets.hpp"
+
+constexpr int TILE = 32, W = 25, H = 18;               // world size in tiles
+enum Block { AIR, DIRT, GRASS, ROCK, WOOD };           // AIR = empty, others = tile index + 1
+using World = std::array<std::array<int, W>, H>;       // world[y][x]
+
+bool solid(const World& w, float px, float py) {       // is this pixel inside a block?
+    if (px < 0 || py < 0) return true;
+    int tx = int(px) / TILE, ty = int(py) / TILE;
+    if (tx >= W || ty >= H) return true;               // outside the map = wall
+    return w[ty][tx] != AIR;
+}
+
+bool hits(const World& w, sf::Vector2f p) {            // player body box is 20x30
+    float l = p.x + 6, r = p.x + 26, t = p.y + 2, b = p.y + 32;
+    return solid(w, l, t) || solid(w, r, t) || solid(w, l, b - 1) || solid(w, r, b - 1);
+}
+
+int main() {
+    sf::RenderWindow window(sf::VideoMode({W * TILE, H * TILE}), "GrowGame");
+    window.setFramerateLimit(60);
+
+    sf::Texture tiles = makeTileset(), sheet = makePlayerSheet();
+    sf::Sprite tile(tiles), player(sheet);
+    player.setOrigin({16.f, 0.f});                     // origin in the middle so we can flip
+
+    World world{};                                     // everything starts as AIR
+    for (int y = 12; y < H; ++y)
+        for (int x = 0; x < W; ++x)
+            world[y][x] = (y == 12) ? GRASS : (y > 15 ? ROCK : DIRT);
+
+    sf::Vector2f pos{64, 200}, vel{0, 0};
+    bool onGround = false, faceLeft = false;
+    float timer = 0;
+    sf::Clock clock;
+
+    while (window.isOpen()) {
+        float dt = clock.restart().asSeconds();
+
+        while (const std::optional event = window.pollEvent()) {
+            if (event->is<sf::Event::Closed>()) window.close();
+            if (const auto* m = event->getIf<sf::Event::MouseButtonPressed>()) {
+                int tx = m->position.x / TILE, ty = m->position.y / TILE;
+                if (tx >= 0 && ty >= 0 && tx < W && ty < H)
+                    world[ty][tx] = (m->button == sf::Mouse::Button::Left) ? AIR : WOOD;
+            }
+        }
+
+        float dir = 0;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) dir -= 1;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) dir += 1;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) && onGround) vel.y = -420;
+        if (dir != 0) faceLeft = dir < 0;
+        vel.x = dir * 160;
+        vel.y += 900 * dt;                             // gravity
+
+        pos.x += vel.x * dt;                           // move on X, undo if we hit a block
+        if (hits(world, pos)) pos.x -= vel.x * dt;
+        onGround = false;
+        pos.y += vel.y * dt;                           // move on Y
+        if (hits(world, pos)) {
+            pos.y -= vel.y * dt;
+            if (vel.y > 0) onGround = true;
+            vel.y = 0;
+        }
+
+        timer += dt;                                   // spritesheet animation
+        int frame = (dir != 0) ? int(timer * 8) % 4 : 0;
+        player.setTextureRect(sf::IntRect({frame * 32, 0}, {32, 32}));
+        player.setScale({faceLeft ? -1.f : 1.f, 1.f});
+        player.setPosition({pos.x + 16, pos.y});
+
+        window.clear(sf::Color(110, 190, 255));
+        for (int y = 0; y < H; ++y)
+            for (int x = 0; x < W; ++x)
+                if (world[y][x] != AIR) {
+                    tile.setTextureRect(sf::IntRect({(world[y][x] - 1) * 32, 0}, {32, 32}));
+                    tile.setPosition({float(x * TILE), float(y * TILE)});
+                    window.draw(tile);
+                }
+        window.draw(player);
+        window.display();
+    }
+}`];
+C.m1=["schema.sql","sql",`CREATE DATABASE IF NOT EXISTS growgame;
+USE growgame;
+
+CREATE TABLE players (
+    id        INT AUTO_INCREMENT PRIMARY KEY,
+    username  VARCHAR(24) NOT NULL UNIQUE,
+    pass_hash VARCHAR(100) NOT NULL,          -- a hash, never the real password
+    gems      INT NOT NULL DEFAULT 0,
+    pos_x     FLOAT NOT NULL DEFAULT 64,
+    pos_y     FLOAT NOT NULL DEFAULT 200
+);
+
+CREATE USER 'game'@'localhost' IDENTIFIED BY 'change_me';
+GRANT SELECT, INSERT, UPDATE ON growgame.* TO 'game'@'localhost';`];
+C.m2=["CMakeLists.txt (add below add_executable)","cmake",`set(CMAKE_PREFIX_PATH "C:/Program Files/MySQL/MySQL Connector C++ 9.1")  # your version
+find_package(mysql-concpp REQUIRED)
+
+target_sources(game PRIVATE src/db.cpp)
+target_link_libraries(game PRIVATE mysql::concpp-jdbc)
+
+if(WIN32)   # copy the Connector's .dll files next to game.exe
+    add_custom_command(TARGET game POST_BUILD
+        COMMAND \${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:game> $<TARGET_FILE_DIR:game>
+        COMMAND_EXPAND_LISTS)
+endif()`];
+C.m3=["src/db.hpp","cpp",`#pragma once
+#include <memory>
+#include <string>
+#include <mysql/jdbc.h>
+
+class Database {
+public:
+    Database(const std::string& host, const std::string& user,
+             const std::string& pass, const std::string& schema);
+    bool registerPlayer(const std::string& name, const std::string& hash);
+    bool loadPlayer(const std::string& name, int& gems, float& x, float& y);
+    void savePlayer(const std::string& name, int gems, float x, float y);
+private:
+    std::unique_ptr<sql::Connection> con_;   // closes itself when the Database is destroyed
+};`];
+C.m4=["src/db.cpp","cpp",`#include "db.hpp"
+#include <iostream>
+
+Database::Database(const std::string& host, const std::string& user,
+                   const std::string& pass, const std::string& schema) {
+    sql::mysql::MySQL_Driver* driver = sql::mysql::get_driver_instance();
+    con_.reset(driver->connect("tcp://" + host + ":3306", user, pass));
+    con_->setSchema(schema);                 // same as: USE growgame;
+}
+
+bool Database::registerPlayer(const std::string& name, const std::string& hash) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> ps(con_->prepareStatement(
+            "INSERT INTO players (username, pass_hash) VALUES (?, ?)"));
+        ps->setString(1, name);              // ? number 1
+        ps->setString(2, hash);
+        ps->executeUpdate();
+        return true;
+    } catch (sql::SQLException& e) {         // e.g. username already exists
+        std::cerr << "register failed: " << e.what() << "\\n";
+        return false;
+    }
+}
+
+bool Database::loadPlayer(const std::string& name, int& gems, float& x, float& y) {
+    std::unique_ptr<sql::PreparedStatement> ps(con_->prepareStatement(
+        "SELECT gems, pos_x, pos_y FROM players WHERE username = ?"));
+    ps->setString(1, name);
+    std::unique_ptr<sql::ResultSet> rs(ps->executeQuery());
+    if (!rs->next()) return false;           // no such player
+    gems = rs->getInt("gems");
+    x = float(rs->getDouble("pos_x"));
+    y = float(rs->getDouble("pos_y"));
+    return true;
+}
+
+void Database::savePlayer(const std::string& name, int gems, float x, float y) {
+    std::unique_ptr<sql::PreparedStatement> ps(con_->prepareStatement(
+        "UPDATE players SET gems = ?, pos_x = ?, pos_y = ? WHERE username = ?"));
+    ps->setInt(1, gems);
+    ps->setDouble(2, x);
+    ps->setDouble(3, y);
+    ps->setString(4, name);
+    ps->executeUpdate();
+}`];
+C.m5=["src/main.cpp (top of main)","cpp",`#include "db.hpp"
+#include <cstdlib>
+
+// ...
+try {
+    const char* pw = std::getenv("GAME_DB_PASS");        // keep secrets out of the code
+    Database db("127.0.0.1", "game", pw ? pw : "", "growgame");
+
+    int gems = 0; float x = 64, y = 200;
+    if (!db.loadPlayer("alex", gems, x, y)) {
+        db.registerPlayer("alex", "hash-goes-here");     // first time playing
+    }
+    pos = {x, y};                                        // restore the saved position
+
+    // ... run the game loop ...
+
+    db.savePlayer("alex", gems, pos.x, pos.y);           // save when the window closes
+} catch (sql::SQLException& e) {
+    std::cerr << "Database error: " << e.what() << "\\n";
+}`];
+
+C.t1=["Fixed timestep (in main.cpp)","cpp",`const float STEP = 1.f / 60.f;      // game logic always advances in 1/60 s slices
+float acc = 0;                       // time we still have to simulate
+sf::Clock clock;
+
+while (window.isOpen()) {
+    acc += clock.restart().asSeconds();
+    if (acc > 0.25f) acc = 0.25f;     // after a lag spike, do not try to catch up forever
+
+    // ...handle events...
+    while (acc >= STEP) {             // update() may run 0, 1 or more times per frame
+        update(STEP);                 // move, gravity, collisions: NO drawing here
+        acc -= STEP;
+    }
+    render();                         // clear, draw, display: NO game rules here
+}`];
+C.t2=["src/dbworker.hpp: run DB jobs on another thread","cpp",`#pragma once
+#include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <queue>
+#include <thread>
+
+class DbWorker {
+public:
+    DbWorker() : th_([this] { run(); }) {}
+    ~DbWorker() {                                   // finish queued jobs, then stop
+        { std::lock_guard<std::mutex> l(m_); stop_ = true; }
+        cv_.notify_one();
+        th_.join();
+    }
+    void post(std::function<void()> job) {          // called from the game thread
+        { std::lock_guard<std::mutex> l(m_); q_.push(std::move(job)); }
+        cv_.notify_one();
+    }
+private:
+    void run() {
+        for (;;) {
+            std::function<void()> job;
+            {
+                std::unique_lock<std::mutex> l(m_);
+                cv_.wait(l, [&] { return stop_ || !q_.empty(); });
+                if (q_.empty()) return;             // stopped and nothing left
+                job = std::move(q_.front());
+                q_.pop();
+            }
+            job();                                  // the slow MySQL call happens here
+        }
+    }
+    std::mutex m_;
+    std::condition_variable cv_;
+    std::queue<std::function<void()>> q_;
+    bool stop_ = false;
+    std::thread th_;                                // declared last: starts after the rest is ready
+};`,
+"Using it","cpp",`DbWorker worker;
+std::unique_ptr<Database> db;                       // created on the worker thread
+worker.post([&] { db = std::make_unique<Database>("127.0.0.1", "game", pass, "growgame"); });
+
+// Later, e.g. every 30 s. Copy the values (capture by value) so the game can keep changing them.
+worker.post([name, gems, x = pos.x, y = pos.y, &db] {
+    if (db) db->savePlayer(name, gems, x, y);
+});`];
+C.t3=["Save changed blocks only","cpp",`// SQL: one row per block, the world+x+y is the key
+// CREATE TABLE world_blocks (world VARCHAR(16), x INT, y INT, block TINYINT,
+//                            PRIMARY KEY (world, x, y));
+
+std::vector<std::array<int, 3>> dirty;               // {x, y, block} for every change
+// when the player breaks a block:  world[ty][tx] = AIR;  dirty.push_back({tx, ty, AIR});
+
+void Database::saveBlocks(const std::string& world, const std::vector<std::array<int, 3>>& changed) {
+    con_->setAutoCommit(false);                       // start a transaction: all or nothing, and faster
+    std::unique_ptr<sql::PreparedStatement> ps(con_->prepareStatement(
+        "INSERT INTO world_blocks (world, x, y, block) VALUES (?, ?, ?, ?) "
+        "ON DUPLICATE KEY UPDATE block = VALUES(block)"));   // insert, or update if it exists
+    for (const auto& c : changed) {
+        ps->setString(1, world);
+        ps->setInt(2, c[0]);
+        ps->setInt(3, c[1]);
+        ps->setInt(4, c[2]);
+        ps->executeUpdate();
+    }
+    con_->commit();
+    con_->setAutoCommit(true);
+}
+// Send a COPY to the worker, then clear: worker.post([=, this]{ db->saveBlocks("START", copy); });`];
+C.t4=["Block table + punch cooldown","cpp",`struct BlockInfo { const char* name; int hits; };          // hits = punches needed to break
+const std::array<BlockInfo, 5> INFO{{
+    {"air", 0}, {"dirt", 3}, {"grass", 3}, {"rock", 6}, {"wood", 4}
+}};                                                          // same order as enum Block
+
+std::map<std::pair<int, int>, int> damage;                   // punches so far on each tile
+sf::Clock punchClock;
+
+void punch(World& world, int tx, int ty) {
+    if (punchClock.getElapsedTime().asSeconds() < 0.3f) return;   // 0.3 s cooldown
+    punchClock.restart();
+    int b = world[ty][tx];
+    if (b == AIR) return;
+    if (++damage[{tx, ty}] >= INFO[b].hits) {                // enough punches?
+        world[ty][tx] = AIR;
+        damage.erase({tx, ty});
+        dirty.push_back({tx, ty, AIR});                      // remember it for the next DB save
+    }
+}`];
+C.t5=["Mouse position with a camera","cpp",`sf::Vector2i pixel = sf::Mouse::getPosition(window);              // position inside the window
+sf::Vector2f spot  = window.mapPixelToCoords(pixel);              // position in the world (uses the View)
+int tx = int(spot.x) / 32, ty = int(spot.y) / 32;                 // which tile is it?
+if (spot.x >= 0 && spot.y >= 0 && tx < W && ty < H) punch(world, tx, ty);`];
+C.c6=["CMakeLists.txt","cmake",`cmake_minimum_required(VERSION 3.20)
+project(Demo VERSION 1.0 LANGUAGES CXX)
+
+set(MY_NAME "Alex")                                   # a variable; read it with \${MY_NAME}
+message(STATUS "Building \${PROJECT_NAME} \${PROJECT_VERSION}")   # prints in the CMake output
+
+option(USE_AUDIO "Build with sound" ON)               # a checkbox: -DUSE_AUDIO=OFF turns it off
+
+file(GLOB SRC CONFIGURE_DEPENDS src/*.cpp)            # collect every .cpp in src/ (re-checked on build)
+add_executable(game \${SRC})
+target_include_directories(game PRIVATE include)      # where your .hpp files live
+
+if(USE_AUDIO)\n    target_compile_definitions(game PRIVATE USE_AUDIO) # now #ifdef USE_AUDIO works in C++
+endif()
+
+# warnings: /W4 on MSVC, -Wall -Wextra on GCC and Clang
+target_compile_options(game PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>)
+
+# copy the assets folder next to the exe after every build
+add_custom_command(TARGET game POST_BUILD
+    COMMAND \${CMAKE_COMMAND} -E copy_directory \${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:game>/assets)`];
+C.k0=["CMakeLists.txt: choose your modules","cmake",`set(SFML_BUILD_AUDIO ON)      # both are ON by default; the first project turned them OFF
+set(SFML_BUILD_NETWORK ON)
+FetchContent_MakeAvailable(SFML)
+
+# Each module is a target. Graphics already brings Window and System with it.
+target_link_libraries(game PRIVATE SFML::Graphics SFML::Audio SFML::Network)
+
+# Linux needs system packages first, for example:
+# sudo apt install libx11-dev libxrandr-dev libxcursor-dev libxi-dev libudev-dev libgl1-mesa-dev libfreetype-dev libopenal-dev libflac-dev libvorbis-dev`];
+C.k1=["sf::Time, Clock, Vector2 and Angle","cpp",`sf::Time t = sf::seconds(2.5f);              // a duration; also sf::milliseconds(), sf::microseconds()
+int ms = t.asMilliseconds();                   // 2500
+
+sf::Clock clock;                               // a stopwatch
+float dt = clock.restart().asSeconds();        // time since last restart, AND restarts it
+float total = clock.getElapsedTime().asSeconds();   // only reads, does not restart
+
+sf::Vector2f dir{3.f, 4.f};                    // x and y: positions, sizes, speeds
+float len = dir.length();                      // 5
+sf::Vector2f unit = dir.normalized();          // same direction, length 1 (same speed on diagonals)
+sf::Vector2f next = pos + unit * 160.f * dt;   // vector math just works
+
+sprite.setRotation(sf::degrees(45));           // sf::Angle: degrees() or radians(), no unit mix-ups`];
+C.k2=["Window, events and input","cpp",`sf::RenderWindow window(sf::VideoMode({800, 600}), "Title", sf::Style::Default, sf::State::Windowed);
+window.setVerticalSyncEnabled(true);           // or setFramerateLimit(60), not both
+
+while (const std::optional event = window.pollEvent()) {
+    if (event->is<sf::Event::Closed>()) window.close();
+    if (const auto* r = event->getIf<sf::Event::Resized>())           // user resized the window
+        window.setView(sf::View(sf::FloatRect({0.f, 0.f}, sf::Vector2f(r->size))));
+    if (const auto* t = event->getIf<sf::Event::TextEntered>()) { /* t->unicode = typed character */ }
+    if (const auto* w = event->getIf<sf::Event::MouseWheelScrolled>()) { /* w->delta: up +, down - */ }
+    if (event->is<sf::Event::FocusLost>()) paused = true;             // pause when the window loses focus
+}
+// Events = things that happen once (a click). isKeyPressed() = things that are held (walking).`];
+C.k3=["Shapes","cpp",`sf::RectangleShape bar({100.f, 12.f});            // size
+bar.setPosition({10.f, 10.f});
+bar.setFillColor(sf::Color::Red);
+bar.setOutlineThickness(1.f);
+
+sf::CircleShape coin(8.f);                       // radius
+coin.setFillColor(sf::Color(255, 215, 0));       // r, g, b (0-255)
+
+window.draw(bar);
+window.draw(coin);                               // later draws appear on top of earlier ones`];
+C.k4=["Fast tilemap with VertexArray","cpp",`// 450 sprites = 450 draw calls. One VertexArray = ONE draw call.
+sf::VertexArray mesh(sf::PrimitiveType::Triangles);
+for (int y = 0; y < H; ++y)
+    for (int x = 0; x < W; ++x) {
+        int b = world[y][x];
+        if (b == AIR) continue;
+        sf::Vector2f p{float(x * TILE), float(y * TILE)};       // corner on screen
+        sf::Vector2f t{float((b - 1) * TILE), 0.f};             // same corner inside tileset.png
+        float s = TILE;
+        sf::Vector2f R{s, 0.f}, D{0.f, s}, RD{s, s};            // right, down, right+down offsets
+        // two triangles make one square
+        mesh.append({p,      sf::Color::White, t});
+        mesh.append({p + R,  sf::Color::White, t + R});
+        mesh.append({p + D,  sf::Color::White, t + D});
+        mesh.append({p + R,  sf::Color::White, t + R});
+        mesh.append({p + RD, sf::Color::White, t + RD});
+        mesh.append({p + D,  sf::Color::White, t + D});
+    }
+sf::RenderStates states;
+states.texture = &tiles;                         // which texture the triangles sample from
+window.draw(mesh, states);
+// Rebuild mesh only when a block changes (a dirty flag), not every frame.`];
+C.k5=["Sound effects and music (SFML::Audio)","cpp",`#include <SFML/Audio.hpp>
+
+sf::SoundBuffer punchBuf("assets/punch.wav");    // whole sound in memory: for short effects
+sf::Sound punchSfx(punchBuf);                    // the buffer must outlive the Sound
+punchSfx.setVolume(70.f);                        // 0 to 100
+punchSfx.play();                                 // call again to retrigger
+
+sf::Music bgm("assets/bgm.ogg");                 // streamed from disk: for long music
+bgm.setLooping(true);
+bgm.setVolume(40.f);
+bgm.play();
+// Keep your Sound objects alive (members or a small pool), not created inside the loop.`];
+C.k6=["TCP client and server (SFML::Network)","cpp",`#include <SFML/Network.hpp>
+
+// ---- SERVER (separate program) ----
+sf::TcpListener listener;
+listener.listen(53000);                          // open port 53000
+sf::TcpSocket client;
+if (listener.accept(client) == sf::Socket::Status::Done) {     // waits for a connection
+    sf::Packet in;
+    if (client.receive(in) == sf::Socket::Status::Done) {
+        std::string name; float x, y;
+        in >> name >> x >> y;                    // read in the SAME order the client wrote
+        // the server (not the client) talks to MySQL here
+    }
+}
+
+// ---- CLIENT (your game) ----
+sf::TcpSocket socket;
+auto ip = sf::IpAddress::resolve("127.0.0.1");   // returns std::optional
+if (ip && socket.connect(*ip, 53000) == sf::Socket::Status::Done) {
+    sf::Packet out;
+    out << std::string("alex") << 64.f << 200.f; // pack the data
+    socket.send(out);
+    socket.setBlocking(false);                   // receive() now returns at once, never freezes the loop
+}`];
+C.u1=["src/ui.hpp: Button and TextBox","cpp",`#pragma once
+#include <SFML/Graphics.hpp>
+#include <string>
+
+class Button {
+public:
+    Button(const sf::Font& font, const std::string& label, sf::Vector2f pos, sf::Vector2f size)
+        : box_(size), text_(font, label, 20) {
+        box_.setPosition(pos);
+        box_.setOutlineThickness(2.f);
+        auto b = text_.getLocalBounds();                  // centre the text in the box
+        text_.setOrigin({b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f});
+        text_.setPosition(pos + size / 2.f);
+        update({-1.f, -1.f});
+    }
+    void update(sf::Vector2f mouse) {                     // call every frame
+        hover_ = box_.getGlobalBounds().contains(mouse);
+        box_.setFillColor(hover_ ? sf::Color(90, 140, 70) : sf::Color(60, 60, 70));
+    }
+    bool clicked(const sf::Event& e) const {              // call for every event
+        const auto* m = e.getIf<sf::Event::MouseButtonPressed>();
+        return hover_ && m && m->button == sf::Mouse::Button::Left;
+    }
+    void draw(sf::RenderTarget& t) const { t.draw(box_); t.draw(text_); }
+private:
+    sf::RectangleShape box_;
+    sf::Text text_;
+    bool hover_ = false;
+};
+
+class TextBox {
+public:
+    TextBox(const sf::Font& font, sf::Vector2f pos, sf::Vector2f size, bool password = false)
+        : box_(size), text_(font, "", 20), password_(password) {
+        box_.setPosition(pos);
+        box_.setFillColor(sf::Color(30, 30, 36));
+        box_.setOutlineThickness(2.f);
+        text_.setPosition(pos + sf::Vector2f(8.f, 6.f));
+        setFocus(false);
+    }
+    void setFocus(bool f) { focus_ = f; box_.setOutlineColor(f ? sf::Color::Yellow : sf::Color(120, 120, 120)); }
+    bool contains(sf::Vector2f p) const { return box_.getGlobalBounds().contains(p); }
+    void handle(const sf::Event& e) {                     // typing, only when focused
+        if (!focus_) return;
+        if (const auto* t = e.getIf<sf::Event::TextEntered>()) {
+            if (t->unicode == 8 && !value_.empty()) value_.pop_back();                  // backspace
+            else if (t->unicode >= 32 && t->unicode < 127 && value_.size() < 24) value_ += char(t->unicode);
+            text_.setString(password_ ? std::string(value_.size(), '*') : value_);
+        }
+    }
+    const std::string& value() const { return value_; }
+    void draw(sf::RenderTarget& t) const { t.draw(box_); t.draw(text_); }
+private:
+    sf::RectangleShape box_;
+    sf::Text text_;
+    std::string value_;
+    bool password_, focus_ = false;
+};`];
+C.u2=["Login screen using them","cpp",`sf::Font font("assets/arial.ttf");                       // must outlive every Text
+TextBox user(font, {300, 180}, {200, 36});
+TextBox pass(font, {300, 230}, {200, 36}, true);          // true = show ****
+Button  play(font, "Login", {300, 290}, {200, 44});
+
+// inside the event loop:
+if (const auto* m = event->getIf<sf::Event::MouseButtonPressed>()) {
+    sf::Vector2f p(m->position);                          // pixel position (default view)
+    user.setFocus(user.contains(p));                      // click a box to type in it
+    pass.setFocus(pass.contains(p));
+}
+user.handle(*event);
+pass.handle(*event);
+if (play.clicked(*event)) startLogin(user.value(), pass.value());   // see tip 8
+
+// once per frame, before drawing:
+play.update(window.mapPixelToCoords(sf::Mouse::getPosition(window)));
+user.draw(window); pass.draw(window); play.draw(window);`];
+C.t6=["State machine","cpp",`enum class State { Login, Playing, Paused };
+State state = State::Login;
+
+// the same switch in events, update and draw
+switch (state) {
+    case State::Login:   handleLoginEvent(*event); break;   // only login code runs here
+    case State::Playing: handlePlayEvent(*event);  break;
+    case State::Paused:  break;
+}
+// Change screens in ONE place: state = State::Playing; (for example when login succeeds)`];
+C.t7=["Collision with items, and safe removal","cpp",`sf::FloatRect me = player.getGlobalBounds();
+for (auto& coin : coins)
+    if (me.findIntersection(coin.shape.getGlobalBounds())) {   // returns std::optional: true if overlapping
+        ++gems;
+        coin.taken = true;                                     // mark it, do not erase inside this loop
+    }
+// remove all marked items afterwards (needs <algorithm>)
+coins.erase(std::remove_if(coins.begin(), coins.end(),
+            [](const Coin& c) { return c.taken; }), coins.end());`];
+C.t8=["Login with a flag","cpp",`std::atomic<int> loginResult{0};                // 0 = waiting, 1 = ok, 2 = wrong (needs <atomic>)
+
+void startLogin(std::string user, std::string pass) {
+    loginResult = 0;
+    worker.post([user, pass] {                   // runs on the DB thread; copies, not references
+        loginResult = db->checkLogin(user, pass) ? 1 : 2;   // your Database method: SELECT with ? placeholders
+    });
+}
+
+// every frame in update():
+if (loginResult == 1) state = State::Playing;
+else if (loginResult == 2) errorText.setString("Wrong username or password");`];
+C.t9=["Buy an item","sql",`CREATE TABLE inventory (
+    player_id INT, item_id INT, qty INT NOT NULL DEFAULT 1,
+    PRIMARY KEY (player_id, item_id));
+
+START TRANSACTION;
+UPDATE players SET gems = gems - 50 WHERE id = 1 AND gems >= 50;   -- 0 rows changed = not enough gems
+-- In C++: if (ps->executeUpdate() == 0) { con_->rollback(); return false; }
+INSERT INTO inventory (player_id, item_id, qty) VALUES (1, 3, 1)
+    ON DUPLICATE KEY UPDATE qty = qty + 1;                          -- add 1, or create the row
+COMMIT;`];
+C.t10=["Hitbox and FPS overlay (toggle with F3)","cpp",`sf::RectangleShape box(player.getGlobalBounds().size);
+box.setPosition(player.getGlobalBounds().position);
+box.setFillColor(sf::Color::Transparent);
+box.setOutlineColor(sf::Color::Green);
+box.setOutlineThickness(1.f);
+
+if (debug) {                                       // flip with: if F3 pressed, debug = !debug;
+    window.draw(box);
+    fpsText.setString(std::to_string(int(1.f / dt)) + " FPS");
+    window.draw(fpsText);
+}`];
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+function fig(name,lang,code){
+  var h=esc(code);
+  var re=lang==="cmake"?/(#.*)/g:lang==="sql"?/(--.*)/g:lang==="json"?null:/(\/\/.*)/g;
+  if(re)h=h.replace(re,'<span class="cm">$1</span>');
+  var d=document.createElement("div");d.className="fig";
+  d.innerHTML='<p class="name"></p><pre><code>'+h+'</code></pre><button class="copy" type="button">Copy</button>';
+  d.querySelector(".name").textContent=name;
+  d.querySelector(".copy").onclick=function(e){
+    var b=e.currentTarget;
+    try{navigator.clipboard.writeText(code).then(function(){b.textContent="Copied"},function(){b.textContent="Select and copy"})}
+    catch(x){b.textContent="Select and copy"}
+    setTimeout(function(){b.textContent="Copy"},1500);
+  };
+  return d;
+}
+Object.keys(C).forEach(function(k){
+  var el=document.getElementById(k);if(!el)return;
+  var a=C[k];
+  for(var i=0;i<a.length;i+=3)el.appendChild(fig(a[i],a[i+1],a[i+2]));
+});
+
+/* tabs, driven by #cmake / #sfml / #mysql */
+var tabs=["cmake","sfml","modules","mysql","tips"];
+function show(){
+  var t=location.hash.slice(1);if(tabs.indexOf(t)<0)t="cmake";
+  tabs.forEach(function(n){document.getElementById(n).classList.toggle("on",n===t)});
+  document.querySelectorAll("nav button").forEach(function(b){b.setAttribute("aria-selected",b.dataset.t===t)});
+}
+document.querySelectorAll("nav button").forEach(function(b){b.onclick=function(){location.hash=b.dataset.t;window.scrollTo(0,0)}});
+window.addEventListener("hashchange",show);show();
+
+/* hero: same recipe as assets.cpp, drawn with canvas */
+(function(){
+  var cv=document.getElementById("hero"),g=cv.getContext("2d");
+  function noise(x,y){var h=(Math.imul(x,374761393)+Math.imul(y,668265263))>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;return(h^(h>>>16))>>>0}
+  function mk(w,h){var c=document.createElement("canvas");c.width=w;c.height=h;return c}
+  function block(ctx,ox,b,grain){for(var y=0;y<32;y++)for(var x=0;x<32;x++){
+    var d=(noise(x+ox,y)%(2*grain+1))-grain,e=x==0||y==0||x==31||y==31;
+    var k=e?.5:1,cl=function(v){return Math.max(0,Math.min(255,e?v*k:v+d))};
+    ctx.fillStyle="rgb("+cl(b[0])+","+cl(b[1])+","+cl(b[2])+")";ctx.fillRect(ox+x,y,1,1)}}
+  var T=mk(128,32),t=T.getContext("2d");
+  block(t,0,[134,96,60],14);block(t,32,[134,96,60],14);t.fillStyle="rgb(80,170,60)";t.fillRect(33,1,30,7);
+  block(t,64,[120,120,130],10);block(t,96,[170,120,70],6);t.fillStyle="rgb(110,70,40)";t.fillRect(97,10,30,2);t.fillRect(97,21,30,2);
+  var P=mk(128,32),p=P.getContext("2d");
+  function r(x,y,w,h,c){p.fillStyle=c;p.fillRect(x,y,w,h)}
+  for(var f=0;f<4;f++){var o=f*32,s=f==1?-3:f==3?3:0;
+    r(o+10,2,12,10,"#ffd6aa");r(o+9,0,14,4,"#3c281e");r(o+17,6,2,2,"#141414");r(o+9,12,14,10,"#dc3c3c");
+    r(o+10+s,22,5,f==1?7:10,"#3250c8");r(o+17-s,22,5,f==3?7:10,"#3250c8")}
+  var W=20,H=5,map=[];
+  for(var y=0;y<H;y++){map.push([]);for(var x=0;x<W;x++)map[y].push(y==3?2:y==4?1:0)}
+  map[2][12]=4;map[2][13]=4;map[1][5]=3;
+  cv.addEventListener("pointerdown",function(e){
+    var q=cv.getBoundingClientRect(),x=Math.floor((e.clientX-q.left)/q.width*W),y=Math.floor((e.clientY-q.top)/q.height*H);
+    if(map[y]&&map[y][x]!==undefined)map[y][x]=map[y][x]?0:4});
+  var reduce=matchMedia("(prefers-reduced-motion:reduce)").matches,px=40,dir=1,tm=0,last=performance.now();
+  function draw(now){
+    var dt=(now-last)/1000;last=now;if(!reduce){px+=dir*60*dt;tm+=dt;if(px>W*32-60)dir=-1;if(px<28)dir=1}
+    g.clearRect(0,0,640,160);
+    for(var y=0;y<H;y++)for(var x=0;x<W;x++){var b=map[y][x];if(b)g.drawImage(T,(b-1)*32,0,32,32,x*32,y*32,32,32)}
+    var fr=reduce?0:Math.floor(tm*8)%4;
+    g.save();g.translate(px+16,3*32-32);if(dir<0)g.scale(-1,1);g.drawImage(P,fr*32,0,32,32,-16,0,32,32);g.restore();
+    requestAnimationFrame(draw)}
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
